@@ -1,10 +1,10 @@
 
 from django.http import Http404, HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.template.loader import render_to_string
 from django.views import View
-from django.views.generic import TemplateView, ListView, DetailView
+from django.views.generic import TemplateView, ListView, DetailView, FormView
 
 from .forms import AddPostForm, UploadFileForm
 
@@ -133,7 +133,7 @@ class ShowPost(DetailView):
 #    return render(request, 'tour/addpage.html', data)
 
 
-class AddPage(View):
+"""class AddPage(View):
     def get(self, request):
         form = AddPostForm()
         data = {
@@ -156,8 +156,21 @@ class AddPage(View):
             'form': form
             
         }
-        return render(request, 'tour/addpage.html', data)
-
+        return render(request, 'tour/addpage.html', data)"""
+        
+class AddPage(FormView):
+    form_class = AddPostForm()
+    template_name = 'tour/addpage.html'
+    success_url = reverse_lazy('home')
+    extra_context = {
+        'menu': menu,
+        'title': 'Добавление турнира',
+    }
+    
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid(form)
+    
 
 def contact(request):
     return HttpResponse('Обратная связь')
