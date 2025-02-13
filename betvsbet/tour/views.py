@@ -81,17 +81,17 @@ def about(request):
                   {'title': 'О сайте', 'menu': menu, 'form': form})
 
 
-def show_post(request, post_slug):
-    post = get_object_or_404(Tour, slug=post_slug)
-    
-    data = {
-        'title': 'Главная страница',
-        'menu': menu,
-        'post': post,
-        'cat_selected': 1,
-        }
-    
-    return render(request, 'tour/post.html', data)
+# def show_post(request, post_slug):
+#    post = get_object_or_404(Tour, slug=post_slug)
+#    
+#    data = {
+#        'title': 'Главная страница',
+#        'menu': menu,
+#        'post': post,
+#        'cat_selected': 1,
+#        }
+#    
+#    return render(request, 'tour/post.html', data)
 
 class ShowPost(DetailView):
     # model = Tour
@@ -159,7 +159,7 @@ class ShowPost(DetailView):
         return render(request, 'tour/addpage.html', data)"""
         
 class AddPage(FormView):
-    form_class = AddPostForm()
+    form_class = AddPostForm
     template_name = 'tour/addpage.html'
     success_url = reverse_lazy('home')
     extra_context = {
