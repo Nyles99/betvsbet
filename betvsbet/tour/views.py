@@ -5,8 +5,9 @@ from django.urls import reverse, reverse_lazy
 from django.template.loader import render_to_string
 from django.views import View
 from django.views.generic import TemplateView, ListView, DetailView, FormView, CreateView, UpdateView
+from django.core.paginator import Paginator
 
-from betvsbet.tour.utils import DataMixin
+from .utils import DataMixin
 
 from .forms import AddPostForm, UploadFileForm
 
@@ -25,16 +26,14 @@ class TourHome(DataMixin, ListView):
     
 
 def about(request):
-    if request.method == 'POST':
-         
-        form = UploadFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            fp = UploadFiles(file=form.cleaned_data['file'])
-            fp.save()
-    else:
-        form = UploadFileForm()
+    contact_list = Tour.published.all()
+    paginator = Paginator(contact_list, 3)
+
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'tour/about.html',
-                  {'title': 'О сайте', 'menu': menu, 'form': form})
+                  {'title': 'О сайте', 'page_obj': page_obj})
 
 
 class ShowPost(DataMixin, DetailView):
@@ -72,17 +71,6 @@ def contact(request):
 def login(request):
     return HttpResponse(f'Авторизация')
 
-def show_category(request, cat_slug):
-    category = get_object_or_404(Category, slug=cat_slug)
-    posts = Tour.published.filter(cat_id=category.pk).select_related('cat')
-    data = {
-        'title': f'Вид спорта: {category.name}',
-        'menu': menu,
-        'posts': posts,
-        'cat_selected': category.pk,
-        }
-    return render(request, 'tour/index.html', data)
-
 
 class TourCategory(DataMixin, ListView):
     template_name = 'tour/index.html'
@@ -95,20 +83,17 @@ class TourCategory(DataMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         cat = context['posts'][0].cat
-        context['title'] = 'Категория - ' + cat.name
-        context['menu'] = menu
-        
-        context['cat_selected'] = cat.pk
-        return context
-    
-    
+        return self.get_mixin_context(context,
+                                      title='Категория - ' + cat.name,
+                                      cat_selected=cat.pk,
+                                      )     
 
 
 def page_not_found(request, exception):
     return HttpResponseNotFound("<h1>Страница не найдена</h1>")
 
 
-class TagPostList(ListView):
+class TagPostList(DataMixin, ListView):
     template_name = 'tour/index.html'
     context_object_name ='posts'
     allow_empty = False
@@ -116,10 +101,8 @@ class TagPostList(ListView):
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
         tag = TagPost.objects.get(slug=self.kwargs['tag_slug'])
-        context['title'] = 'Тег:' + tag.tag
-        context['menu'] = menu
-        context['cat_selected'] = None
-        return context
+        return self.get_mixin_context(context, title = 'Тег:' + tag.tag)
+        
     
     def get_queryset(self):
         return Tour.published.filter(tags__slug=self.kwargs['tag_slug']).select_related('cat')
